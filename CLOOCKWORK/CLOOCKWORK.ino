@@ -13,7 +13,7 @@ bool displayMemory[32];
 int hours = 12;
 int minutes = 12;
 
-bool displayMemoryTest[32] = { HIGH, LOW, HIGH, HIGH, LOW, HIGH, LOW, HIGH, LOW, LOW, LOW, HIGH, HIGH, HIGH, LOW, HIGH, HIGH, LOW, HIGH, HIGH, LOW, HIGH, LOW, HIGH, LOW, LOW, LOW, HIGH, HIGH, HIGH, LOW, HIGH };
+bool displayMemoryTest[32] = { LOW, LOW, LOW, HIGH, HIGH, LOW, LOW, LOW, LOW, HIGH, HIGH, LOW, HIGH, HIGH, LOW, LOW, LOW, LOW, LOW, HIGH, HIGH, LOW, LOW, LOW, LOW, HIGH, HIGH, LOW, HIGH, HIGH, LOW, HIGH };
 
 /*Lifecycle Hooks */
 void setup() {
@@ -23,12 +23,13 @@ void setup() {
   pinMode(CLOCK, OUTPUT);
   URTCLIB_WIRE.begin();
   Serial.begin(9600);
-  rtc.set(5, 7, 5, 7, 2, 5, 15);
+  rtc.set(0, 13, 17, 7, 2, 5, 15);
+  Serial.println("All set");
 }
 
 void loop() {
-  static const unsigned long displayRefreshInterval = 1000;
-  static const unsigned long clockRefreshInterval = 5000;
+  static const unsigned long displayRefreshInterval = 250;
+  static const unsigned long clockRefreshInterval = 500;
   static unsigned long lastRefreshTime = 0;
   static unsigned long lastClockReTime = 0;
 
@@ -45,8 +46,9 @@ void loop() {
 
 /* Updates Display */
 void updateDisplay() {
-  getBackFourDigits(12, 10, numbers);
+  getBackFourDigits(rtc.second(), rtc.second(), numbers);
   setDisplayMemory(numbers[0], numbers[1], numbers[2], numbers[3]);
+  writeDisplayRegisters();
   writeDisplayRegisters();
 }
 
@@ -64,10 +66,10 @@ void getBackFourDigits(int hour, int minute, int numbers[]) {
   int minuteDecimal = minute / 10;
   int minuteSingles = minute % 10;
 
-  numbers[0] = hourDecimal;
-  numbers[1] = hourSingles;
-  numbers[2] = minuteDecimal;
-  numbers[3] = minuteSingles;
+  numbers[0] = minuteSingles;
+  numbers[1] = minuteDecimal;
+  numbers[2] = hourSingles;
+  numbers[3] = hourDecimal;
 }
 
 /* Sets Display Memory Bytes */
@@ -77,17 +79,18 @@ void setDisplayMemory(int firstDigit, int secondDigit, int thirdDigit, int fourt
 
   bool characterMap[10][8] = {
     { HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, LOW },
-    { LOW, LOW, LOW, HIGH, HIGH, LOW, LOW, LOW },
-    { LOW, HIGH, HIGH, LOW, HIGH, HIGH, LOW, HIGH },
-    { LOW, LOW, HIGH, HIGH, HIGH, HIGH, LOW, HIGH },
-    { HIGH, LOW, LOW, HIGH, HIGH, LOW, LOW, HIGH },
-    { HIGH, LOW, HIGH, HIGH, LOW, HIGH, LOW, HIGH },
-    { HIGH, HIGH, HIGH, HIGH, LOW, HIGH, LOW, HIGH },
-    { LOW, LOW, LOW, HIGH, HIGH, HIGH, LOW, HIGH },
-    { HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, LOW, HIGH },
-    { HIGH, LOW, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH }
+    { 0, 0, 0, 1, 1, 0, 0, 0 },
+    { 0, 1, 1, 0, 1, 1, 0, 0 },
+    { 0, 0, 1, 1, 1, 1, 1, 0 },
+    { 1, 0, 0, 1, 1, 0, 1, 0 },
+    { 1, 0, 1, 1, 0, 1, 1, 0 },
+    { 1, 1, 1, 1, 0, 1, 1, 0 },
+    { 0, 0, 0, 1, 1, 1, 1, 0 },
+    { 1, 1, 1, 1, 1, 1, 0, 0 },
+    { 1, 0, 1, 1, 1, 1, 1, 0 }
   };
-
+  //  6, 5, 4, 3, 2, 1, x, 7
+ // { 0, 1, 1, 0, 1, 1, 0, 0 },
   int displayMemoryAddress = 0;
 
   for (int r = 0; r < 4; r++) {
@@ -104,7 +107,9 @@ void setDisplayMemory(int firstDigit, int secondDigit, int thirdDigit, int fourt
 void writeDisplayRegisters() {
   for (int bit = 0; bit < 32; bit++) {
     writeBit(displayMemory[bit]);
+    Serial.print(displayMemory[bit]);
   }
+  Serial.println();
 }
 
 /* Writes a bit to the 74HC Series Register */
