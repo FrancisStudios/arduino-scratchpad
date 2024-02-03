@@ -10,6 +10,8 @@ int REGCLOCK = 10;
 /* Global Stores */
 int numbers[4];
 bool displayMemory[32];
+int hours = 12;
+int minutes = 12;
 
 bool displayMemoryTest[32] = { HIGH, LOW, HIGH, HIGH, LOW, HIGH, LOW, HIGH, LOW, LOW, LOW, HIGH, HIGH, HIGH, LOW, HIGH, HIGH, LOW, HIGH, HIGH, LOW, HIGH, LOW, HIGH, LOW, LOW, LOW, HIGH, HIGH, HIGH, LOW, HIGH };
 
@@ -21,18 +23,38 @@ void setup() {
   pinMode(CLOCK, OUTPUT);
   URTCLIB_WIRE.begin();
   Serial.begin(9600);
-  rtc.set(0, 6, 21, 6, 2, 5, 15);
+  rtc.set(5, 7, 5, 7, 2, 5, 15);
 }
 
 void loop() {
-  rtc.refresh();
+  static const unsigned long displayRefreshInterval = 1000;
+  static const unsigned long clockRefreshInterval = 5000;
+  static unsigned long lastRefreshTime = 0;
+  static unsigned long lastClockReTime = 0;
 
-  getBackFourDigits(rtc.hour(), rtc.minute(), numbers);
+  if (millis() - lastRefreshTime >= displayRefreshInterval) {
+    lastRefreshTime += displayRefreshInterval;
+    updateDisplay();
+  }
+
+  if (millis() - lastClockReTime >= clockRefreshInterval) {
+    lastClockReTime += clockRefreshInterval;
+    updateClock();
+  }
+}
+
+/* Updates Display */
+void updateDisplay() {
+  getBackFourDigits(12, 10, numbers);
   setDisplayMemory(numbers[0], numbers[1], numbers[2], numbers[3]);
   writeDisplayRegisters();
-  writeDisplayRegisters();
-  writeDisplayRegisters();
-  delay(10000);
+}
+
+/* Updates RTC */
+void updateClock() {
+  rtc.refresh();
+  hours = rtc.hour();
+  minutes = rtc.minute();
 }
 
 /* Puts the Four Digits Into The Numbers Array */
@@ -71,11 +93,8 @@ void setDisplayMemory(int firstDigit, int secondDigit, int thirdDigit, int fourt
   for (int r = 0; r < 4; r++) {
     for (int bit = 0; bit < 8; bit++) {
       displayMemory[displayMemoryAddress] = characterMap[rDigits[r]][bit];
-      Serial.print(displayMemoryAddress);
-
-      displayMemoryAddress++; /* This is much better now the issue is that we have a repeat on the end and the front of next */
+      displayMemoryAddress++;
     }
-    Serial.println(displayMemoryAddress);
   }
 
   displayMemoryAddress = 0;
@@ -84,12 +103,8 @@ void setDisplayMemory(int firstDigit, int secondDigit, int thirdDigit, int fourt
 /* Bitbang Bits Into The Display Registers */
 void writeDisplayRegisters() {
   for (int bit = 0; bit < 32; bit++) {
-    writeBit(displayMemoryTest[bit]);
-    //Serial.print(displayMemory[bit]);
+    writeBit(displayMemory[bit]);
   }
-
-  Serial.println();
-  Serial.println();
 }
 
 /* Writes a bit to the 74HC Series Register */
