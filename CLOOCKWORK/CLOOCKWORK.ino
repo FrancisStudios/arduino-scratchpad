@@ -7,6 +7,11 @@ int DATA = 8;
 int CLOCK = 9;
 int REGCLOCK = 10;
 
+int CLOCK_HOUR_UP = 2;
+int CLOCK_HOUR_DOWN = 3;
+int CLOCK_MINUTE_UP = 4;
+int CLOCK_MINUTE_DOWN = 5;
+
 /* Global Stores */
 int numbers[4];
 bool displayMemory[32];
@@ -21,9 +26,13 @@ void setup() {
   pinMode(DATA, OUTPUT);
   pinMode(REGCLOCK, OUTPUT);
   pinMode(CLOCK, OUTPUT);
+  pinMode(CLOCK_HOUR_UP, INPUT);
+  pinMode(CLOCK_HOUR_DOWN, INPUT);
+  pinMode(CLOCK_MINUTE_UP, INPUT);
+  pinMode(CLOCK_MINUTE_DOWN, INPUT);
   URTCLIB_WIRE.begin();
   Serial.begin(9600);
-  rtc.set(0, 34, 20, 7, 2, 5, 15);
+  rtc.set(0, minutes, hours, 7, 2, 5, 15);
   Serial.println("All set");
 }
 
@@ -42,6 +51,8 @@ void loop() {
     lastClockReTime += clockRefreshInterval;
     updateClock();
   }
+
+  checkSetButtonStatus();
 }
 
 /* Updates Display */
@@ -90,10 +101,7 @@ void setDisplayMemory(int firstDigit, int secondDigit, int thirdDigit, int fourt
     { 1, 0, 1, 1, 1, 1, 1, 0 }
   };
   //  6, 5, 4, 3, 2, 1, x, 7
- // { 0, 1, 1, 0, 1, 1, 0, 0 },
-
- // 0 { 1, 1, 1, 1, 1, 1, 1, 0 },
- // 8 { 1, 1, 1, 1, 1, 1, 0, 0 },
+  // { 0, 1, 1, 0, 1, 1, 0, 0 },
   int displayMemoryAddress = 0;
 
   for (int r = 0; r < 4; r++) {
@@ -110,9 +118,7 @@ void setDisplayMemory(int firstDigit, int secondDigit, int thirdDigit, int fourt
 void writeDisplayRegisters() {
   for (int bit = 0; bit < 32; bit++) {
     writeBit(displayMemory[bit]);
-    Serial.print(displayMemory[bit]);
   }
-  Serial.println();
 }
 
 /* Writes a bit to the 74HC Series Register */
@@ -122,4 +128,40 @@ void writeBit(bool bit) {
   digitalWrite(DATA, bit);
   digitalWrite(CLOCK, LOW);
   digitalWrite(REGCLOCK, HIGH);
+}
+
+/* Set Button Handling */
+void checkSetButtonStatus() {
+  if (digitalRead(CLOCK_HOUR_UP) == HIGH) setTime(1);
+  //if (digitalRead(CLOCK_HOUR_DOWN) == HIGH) setTime(2);
+  //if (digitalRead(CLOCK_MINUTE_UP) == HIGH) setTime(3);
+  //if (digitalRead(CLOCK_MINUTE_DOWN) == HIGH) setTime(4);
+}
+
+void setTime(int direction) {
+  delay(500);
+  switch (direction) {
+    case 1:
+      hours++;
+      break;
+
+    case 2:
+      hours--;
+      break;
+
+    case 3:
+      minutes++;
+      break;
+
+    case 4:
+      minutes--;
+      break;
+  }
+  checkTimeValidity();
+  rtc.set(0, minutes, hours, 7, 2, 5, 15);
+}
+
+void checkTimeValidity() {
+  if (hours > 24 || hours < 0) hours = 0;
+  if (minutes > 59 || minutes < 0) minutes = 0;
 }
