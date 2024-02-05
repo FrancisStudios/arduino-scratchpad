@@ -1,5 +1,12 @@
 #include <uRTCLib.h>
 
+/* 
+==== Written by Levente ====
+ Property of Francis Studios
+c. 2024 all rights reserved
+____________________________
+*/
+
 uRTCLib rtc(0x68);
 
 /* Pin Setup */
@@ -133,9 +140,9 @@ void writeBit(bool bit) {
 /* Set Button Handling */
 void checkSetButtonStatus() {
   if (digitalRead(CLOCK_HOUR_UP) == HIGH) setTime(1);
-  //if (digitalRead(CLOCK_HOUR_DOWN) == HIGH) setTime(2);
-  //if (digitalRead(CLOCK_MINUTE_UP) == HIGH) setTime(3);
-  //if (digitalRead(CLOCK_MINUTE_DOWN) == HIGH) setTime(4);
+  if (digitalRead(CLOCK_HOUR_DOWN) == HIGH) setTime(2);
+  if (digitalRead(CLOCK_MINUTE_UP) == HIGH) setTime(3);
+  if (digitalRead(CLOCK_MINUTE_DOWN) == HIGH) setTime(4);
 }
 
 void setTime(int direction) {
